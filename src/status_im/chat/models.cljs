@@ -6,6 +6,7 @@
             [status-im.data-store.user-statuses :as user-statuses-store]
             [status-im.contact-code.core :as contact-code]
             [status-im.i18n :as i18n]
+            [status-im.tribute-to-talk.core :as tribute-to-talk]
             [status-im.transport.chat.core :as transport.chat]
             [status-im.transport.utils :as transport.utils]
             [status-im.transport.message.protocol :as protocol]
@@ -229,6 +230,7 @@
               {:db (-> (assoc db :current-chat-id chat-id)
                        (set-chat-ui-props {:validation-messages nil}))}
               (contact-code/listen-to-chat chat-id)
+              (tribute-to-talk/check-tribute chat-id)
               (mark-messages-seen chat-id))))
 
 (fx/defn navigate-to-chat

@@ -795,8 +795,9 @@
 (handlers/register-handler-fx
  :chat.ui/show-profile
  (fn [cofx [_ identity]]
-   (navigation/navigate-to-cofx
-    (assoc-in cofx [:db :contacts/identity] identity) :profile nil)))
+   (fx/merge (assoc-in cofx [:db :contacts/identity] identity)
+             (tribute-to-talk/check-tribute identity)
+             (navigation/navigate-to-cofx :profile nil))))
 
 (handlers/register-handler-fx
  :chat.ui/set-chat-input-text
@@ -1824,3 +1825,26 @@
  :bottom-sheet/hide-sheet
  (fn [cofx _]
    (bottom-sheet/hide-bottom-sheet cofx)))
+
+(handlers/register-handler-fx
+ :tribute-to-talk.ui/set-tribute
+ (fn [{:keys [db] :as cofx}  [_ identity value]]
+   (log/warn "event set-tribute" identity value)
+   (tribute-to-talk/set-tribute cofx identity value)))
+
+(handlers/register-handler-fx
+ :tribute-to-talk.ui/mark-tribute-as-paid
+ (fn [{:keys [db] :as cofx}  [_ identity]]
+   (fx/merge cofx
+             (tribute-to-talk/mark-tribute-as-paid identity)
+             (contact/add-to-whitelist identity))))
+
+(handlers/register-handler-fx
+ :tribute-to-talk.ui/on-pay-to-chat-pressed
+ (fn [{:keys [db] :as cofx}  [_ identity]]
+   (tribute-to-talk/pay-tribute cofx identity)))
+
+(handlers/register-handler-fx
+ :tribute-to-talk.ui/check-tribute
+ (fn [{:keys [db] :as cofx}  [_ identity]]
+   (tribute-to-talk/check-tribute cofx identity)))

@@ -128,3 +128,5 @@
                       :system-tags      {:type "string[]"}
                       :device-info      {:type       :list
                                          :objectType :contact-device-info}}})
+(def v8 (-> v7
+            (assoc-in [:properties :tribute] {:type :float :optional true})))

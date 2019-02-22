@@ -1,7 +1,18 @@
 (ns status-im.tribute-to-talk.core
   (:refer-clojure :exclude [remove])
   (:require [clojure.string :as string]
+            [status-im.i18n :as i18n]
             [status-im.accounts.update.core :as accounts.update]
+            [re-frame.core :as re-frame]
+            [taoensso.timbre :as log]
+            [status-im.ui.screens.wallet.choose-recipient.events :as choose-recipient.events]
+            [status-im.ui.screens.wallet.db :as wallet.db]
+            [status-im.utils.ethereum.core :as ethereum]
+            [status-im.utils.ethereum.tokens :as tokens]
+            [status-im.utils.money :as money]
+            [status-im.contact.db :as contact]
+            [status-im.utils.ethereum.core :as ethereum.core]
+            [status-im.utils.ethereum.tribute :as ethereum.tribute]
             [status-im.ui.screens.navigation :as navigation]
             [status-im.utils.fx :as fx]))
 
@@ -127,3 +138,69 @@
                              {:step :finish})}
               (accounts.update/update-settings
                (assoc account-settings :tribute-to-talk {:seen? true}) {}))))
+
+(fx/defn check-tribute [{:keys [db] :as cofx} identity]
+  (when (and (not (get-in db [:chats identity :group-chat]))
+             (not (contact/whitelist? (get-in db [:contacts/contacts identity]))))
+    (let [network (get-in db [:account/account :networks (:network db)])
+          contract (get ethereum.tribute/contracts (ethereum.core/network->chain-keyword network))
+          cb #(re-frame/dispatch [:tribute-to-talk.ui/set-tribute identity %1])]
+      (ethereum.tribute/get-tribute (:web3 db) contract identity cb)))
+  {:db db})
+
+(fx/defn set-tribute  [{:keys [db] :as cofx} identity value]
+  (if (pos? value)
+    {:db (-> db
+             (assoc-in [:contacts/contacts identity :tribute] value))}))
+
+(fx/defn mark-tribute-as-paid [{:keys [db] :as cofx} identity]
+  {:db (update-in db [:contacts/contacts identity :system-tags]
+                  #(conj % :tribute-to-talk/paid))})
+
+(defn status-label [{:keys [system-tags tribute]}]
+  (cond (contains? system-tags :ttt/paid)
+        (i18n/label :t/tribute-state-paid)
+        ;(= status :pending)
+        ;(i18n/label :t/tribute-state-pending)
+        (pos? tribute)
+        (i18n/label :t/tribute-state-required {:snt-amount tribute})
+        :else nil))
+
+(defn- transaction-details [contact symbol]
+  (-> contact
+      (select-keys [:name :address :public-key])
+      (assoc :symbol symbol
+             :gas (ethereum/estimate-gas symbol)
+             :from-chat? true)))
+
+(fx/defn pay-tribute [{:keys [db] :as cofx} identity]
+  (let [recipient-contact     (get-in db [:contacts/contacts identity])
+        sender-account        (:account/account db)
+        chain                 (keyword (:chain db))
+        amount (str (:tribute recipient-contact))
+        symbol-param          :SNT
+        _ (log/warn "#1")
+        all-tokens            (:wallet/all-tokens db)
+        {:keys [symbol decimals]} (tokens/asset-for all-tokens chain symbol-param)
+        _ (log/warn "#2" amount decimals)
+        {:keys [value error]}     (wallet.db/parse-amount amount decimals)
+        _ (log/warn "#3")
+        next-view-id              (if (:wallet-set-up-passed? sender-account)
+                                    :wallet-send-transaction-modal
+                                    :wallet-onboarding-setup)
+        _ (log/warn "#pay-tribute let")]
+    (fx/merge cofx
+              {:db (-> db
+                       (update-in [:wallet :send-transaction]
+                                  assoc
+                                  :amount (money/formatted->internal value symbol decimals)
+                                  :amount-text amount
+                                  :amount-error error)
+                       (choose-recipient.events/fill-request-details
+                        (transaction-details recipient-contact symbol) false)
+                       (update-in [:wallet :send-transaction]
+                                  dissoc :id :password :wrong-password?))
+               :update-gas-price {:web3          (:web3 db)
+                                  :success-event :wallet/update-gas-price-success
+                                  :edit?         false}}
+              (navigation/navigate-to-cofx next-view-id {}))))

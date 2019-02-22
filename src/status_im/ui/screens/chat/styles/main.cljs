@@ -196,7 +196,6 @@
 
 (def empty-chat-container
   {:flex             1
-   :flex-direction   :column
    :justify-content  :center
    :align-items      :center
    :padding-vertical 50
@@ -206,6 +205,14 @@
   {:color      colors/gray
    :width      280
    :text-align :center})
+
+(def loading-text
+  {:color          colors/gray
+   :font-size      15
+   :line-height    22
+   :letter-spacing -0.2
+   :margin-right   4
+   :text-align     :center})
 
 (def empty-chat-text-name
   {:margin-bottom 5})
@@ -235,3 +242,25 @@
 
 (def decline-chat
   {:color colors/blue})
+
+(def are-you-friends-bubble
+  {:border-radius      8
+   :border-width       1
+   :margin-top         4
+   :border-color       colors/gray-lighter
+   :align-items        :center
+   :padding-vertical   12
+   :padding-horizontal 16})
+
+(def are-you-friends-text
+  {:line-height 22
+   :text-align  :center
+   :font-size   15
+   :color       colors/gray})
+
+(def share-my-profile
+  {:color       colors/blue
+   :text-align  :center
+   :margin-top  11
+   :line-height 22
+   :font-size   15})

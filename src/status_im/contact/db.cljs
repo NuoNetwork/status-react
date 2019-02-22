@@ -10,28 +10,28 @@
 
 ;;Contact
 
-(spec/def :contact/public-key :global/not-empty-string)
-(spec/def :contact/name :global/not-empty-string)
 (spec/def :contact/address (spec/nilable :global/address))
-(spec/def :contact/photo-path (spec/nilable string?))
 (spec/def :contact/fcm-token (spec/nilable string?))
-(spec/def :contact/last-updated (spec/nilable int?))
 (spec/def :contact/last-online (spec/nilable int?))
+(spec/def :contact/last-updated (spec/nilable int?))
+(spec/def :contact/name :global/not-empty-string)
+(spec/def :contact/public-key :global/not-empty-string)
+(spec/def :contact/photo-path (spec/nilable string?))
 
-(spec/def :contact/tags (spec/coll-of string? :kind set?))
 ;; contact/blocked: the user is blocked
 ;; contact/added: the user was added to the contacts and a contact request was sent
 ;; contact/request-received: the user sent a contact request
 (spec/def :contact/system-tags (spec/coll-of keyword? :kind set?))
+(spec/def :contact/tags (spec/coll-of string? :kind set?))
 
-(spec/def :contact/contact (spec/keys  :req-un [:contact/public-key
+(spec/def :contact/contact (spec/keys  :req-un [:contact/address
                                                 :contact/name
-                                                :contact/address
                                                 :contact/photo-path
+                                                :contact/public-key
                                                 :contact/system-tags]
-                                       :opt-un [:contact/last-updated
+                                       :opt-un [:contact/fcm-token
                                                 :contact/last-online
-                                                :contact/fcm-token
+                                                :contact/last-updated
                                                 :contact/tags]))
 
 ;;Contact list ui props
@@ -129,6 +129,17 @@
    (contains? system-tags :contact/added))
   ([db public-key]
    (added? (get-in db [:contacts/contacts public-key]))))
+
+(defn whitelist? [{:keys [system-tags]}]
+  (or (contains? system-tags :contact/added)
+      (contains? system-tags :tribute-to-talk/received)))
+
+(defn get-contact-whitelist
+  [contacts]
+  (reduce (fn [acc {:keys [public-key] :as contact}]
+            (if (whitelist? contact)
+              (conj acc public-key) acc))
+          (hash-set) contacts))
 
 (defn blocked?
   ([{:keys [system-tags]}]

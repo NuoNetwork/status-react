@@ -3,6 +3,7 @@
             [status-im.accounts.db :as accounts.db]
             [status-im.chat.models :as chat.models]
             [clojure.set :as clojure.set]
+            [taoensso.timbre :as log]
             [status-im.contact.db :as contact.db]
             [status-im.contact.device-info :as device-info]
             [status-im.data-store.contacts :as contacts-store]
@@ -26,10 +27,13 @@
 (fx/defn load-contacts
   [{:keys [db all-contacts]}]
   (let [contacts-list (map #(vector (:public-key %) %) all-contacts)
-        contacts (into {} contacts-list)]
+        contacts (into {} contacts-list)
+        tr-to-talk-enabled? (get-in db  [:account/account :settings :tribute-to-talk :snt-amount])]
     {:db (-> db
              (update :contacts/contacts #(merge contacts %))
-             (assoc :contacts/blocked (contact.db/get-blocked-contacts all-contacts)))}))
+             (assoc :contacts/blocked (contact.db/get-blocked-contacts all-contacts))
+             (#(when tr-to-talk-enabled?
+                 (assoc % :contacts/whitelist (contact.db/get-contact-whitelist all-contacts)) %)))}))
 
 (defn build-contact
   [{{:keys [chats] :account/keys [account]
@@ -64,6 +68,11 @@
     (protocol/send (message.contact/map->ContactRequest (own-info db)) public-key cofx)
     (protocol/send (message.contact/map->ContactRequestConfirmed (own-info db)) public-key cofx)))
 
+(fx/defn add-to-whitelist
+  "Add contact to whitelist"
+  [{:keys [db]} public-key]
+  {:db (update db :contacts/whitelist #(conj % public-key))})
+
 (fx/defn add-contact
   "Add a contact and set pending to false"
   [{:keys [db] :as cofx} public-key]
@@ -74,6 +83,7 @@
       (fx/merge cofx
                 {:db (assoc-in db [:contacts/new-identity] "")}
                 (upsert-contact contact)
+                (add-to-whitelist public-key)
                 (send-contact-request contact)))))
 
 (fx/defn add-contacts-filter [{:keys [db]} public-key action]
@@ -93,24 +103,6 @@
                           :chat-id  public-key
                           :minPow   1
                           :callback (constantly nil)}]}})))
-
-(fx/defn change-system-tag
-  "remove a system tag from the contact"
-  [{:keys [db] :as cofx} public-key tag change-fn]
-  (let [contact (update (get-in db [:contacts/contacts public-key])
-                        :system-tags (fnil #(change-fn % tag) #{}))]
-    {:db (assoc-in db [:contacts/contacts public-key] contact)
-     :data-store/tx [(contacts-store/save-contact-tx contact)]}))
-
-(fx/defn add-system-tag
-  "add a system tag to the contact"
-  [{:keys [db] :as cofx} public-key tag]
-  (change-system-tag cofx public-key tag conj))
-
-(fx/defn remove-system-tag
-  "remove a system tag from the contact"
-  [{:keys [db] :as cofx} public-key tag]
-  (change-system-tag cofx public-key tag disj))
 
 (fx/defn block-contact-confirmation
   [cofx public-key]

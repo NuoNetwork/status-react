@@ -30,10 +30,12 @@
              :chats                              {}
              :current-chat-id                    nil
              :selected-participants              #{}
+             :tags                               []
+             :system-tags                        []
              :sync-state                         :done
              :app-state                          "active"
              :wallet.transactions                constants/default-wallet-transactions
-             :wallet-selected-asset              {}
+             ;:wallet-selected-asset              {}
              :wallet/all-tokens                  {}
              :prices                             {}
              :peers-count                        0
@@ -327,7 +329,7 @@
                                    :chat/access-scope->command-id
                                    :wallet/wallet
                                    :wallet/wallet.transactions
-                                   :wallet/wallet-selected-asset
+                                   ;:wallet/wallet-selected-asset
                                    :prices/prices
                                    :prices/prices-loading?
                                    :notifications/notifications
