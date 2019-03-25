@@ -148,11 +148,6 @@
       (ethereum.tribute/get-tribute (:web3 db) contract identity cb)))
   {:db db})
 
-(fx/defn set-tribute  [{:keys [db] :as cofx} identity value]
-  (if (pos? value)
-    {:db (-> db
-             (assoc-in [:contacts/contacts identity :tribute] value))}))
-
 (fx/defn mark-tribute-as-paid [{:keys [db] :as cofx} identity]
   {:db (update-in db [:contacts/contacts identity :system-tags]
                   #(conj % :tribute-to-talk/paid))})
@@ -204,3 +199,8 @@
                                   :success-event :wallet/update-gas-price-success
                                   :edit?         false}}
               (navigation/navigate-to-cofx next-view-id {}))))
+
+#_(defn filter-message [cofx tx-id chat-id]
+    (and (= (:message-type this) :user-message)
+         (or (is-valid-tx? chat-id (:tribute-tx-id (:content this)))
+             (whitelist? (:content this)))))

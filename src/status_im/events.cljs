@@ -1830,7 +1830,7 @@
  :tribute-to-talk.ui/set-tribute
  (fn [{:keys [db] :as cofx}  [_ identity value]]
    (log/warn "event set-tribute" identity value)
-   (tribute-to-talk/set-tribute cofx identity value)))
+   (contact/set-tribute cofx identity value)))
 
 (handlers/register-handler-fx
  :tribute-to-talk.ui/mark-tribute-as-paid
