@@ -29,11 +29,11 @@
   (let [contacts-list (map #(vector (:public-key %) %) all-contacts)
         contacts (into {} contacts-list)
         tr-to-talk-enabled? (get-in db  [:account/account :settings :tribute-to-talk :snt-amount])]
-    {:db (-> db
-             (update :contacts/contacts #(merge contacts %))
-             (assoc :contacts/blocked (contact.db/get-blocked-contacts all-contacts))
-             (#(if tr-to-talk-enabled?
-                 (assoc % :contacts/whitelist (contact.db/get-contact-whitelist all-contacts)) %)))}))
+    {:db (cond-> (-> db
+                     (update :contacts/contacts #(merge contacts %))
+                     (assoc :contacts/blocked (contact.db/get-blocked-contacts all-contacts)))
+           tr-to-talk-enabled?
+           (assoc :contacts/whitelist (contact.db/get-contact-whitelist all-contacts)))}))
 
 (defn build-contact
   [{{:keys [chats] :account/keys [account]
