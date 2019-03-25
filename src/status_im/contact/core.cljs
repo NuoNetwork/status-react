@@ -32,7 +32,7 @@
     {:db (-> db
              (update :contacts/contacts #(merge contacts %))
              (assoc :contacts/blocked (contact.db/get-blocked-contacts all-contacts))
-             (#(when tr-to-talk-enabled?
+             (#(if tr-to-talk-enabled?
                  (assoc % :contacts/whitelist (contact.db/get-contact-whitelist all-contacts)) %)))}))
 
 (defn build-contact
@@ -282,3 +282,7 @@
   [{{:contacts/keys [new-identity]} :db :as cofx}]
   (when (seq new-identity)
     (open-chat cofx new-identity)))
+
+(fx/defn set-tribute  [{:keys [db] :as cofx} identity tribute]
+  {:db (assoc-in db [:contacts/contacts identity :tribute] tribute)
+   :data-store/tx [(contacts-store/set-tribute-tx identity tribute)]})

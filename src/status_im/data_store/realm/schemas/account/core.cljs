@@ -433,7 +433,7 @@
 
 (def v39 [chat/v14
           transport/v8
-          contact/v7
+          contact/v6
           message/v9
           mailserver/v11
           mailserver-topic/v1
