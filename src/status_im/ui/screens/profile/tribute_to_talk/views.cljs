@@ -58,10 +58,10 @@
 (defn snt-amount-label
   [snt-amount fiat-value]
   [react/view {:style styles/snt-amount-container}
-   [react/text {:style styles/snt-amount-label
-                :number-of-lines 1
-                :ellipsize-mode :middle}
-    [react/text {:style styles/snt-amount} (or snt-amount "0")]
+   [react/nested-text {:style styles/snt-amount-label
+                       :number-of-lines 1
+                       :ellipsize-mode :middle}
+    [{:style styles/snt-amount} (or snt-amount "0")]
     " SNT"]
    [snt-asset-value fiat-value]])
 
@@ -112,10 +112,9 @@
   [react/scroll-view
    {:content-container-style styles/personalized-message-container}
    [react/view {:style styles/personalized-message-title}
-    [react/text {:style {:text-align :center}}
+    [react/nested-text {:style {:text-align :center}}
      (i18n/label :t/personalized-message)
-     [react/text {:style styles/description-label}
-      (str " (" (i18n/label :t/optional) ")")]]]
+     [{:style styles/description-label} (str " (" (i18n/label :t/optional) ")")]]]
    [react/text-input
     (cond-> {:style (assoc styles/personalized-message-input :height 144
                            :align-self :stretch)
@@ -153,10 +152,9 @@
                    :t/you-are-all-set
                    :t/tribute-to-talk-disabled))]
     (if snt-amount
-      [react/text {:style (assoc styles/description-label :margin-top 16)}
+      [react/nested-text {:style (assoc styles/description-label :margin-top 16)}
        (i18n/label :t/tribute-to-talk-finish-desc)
-       [react/text {:style {:text-align :center}}
-        snt-amount]
+       [{:style {:text-align :center}} snt-amount]
        " SNT"]
       [react/text {:style (assoc styles/description-label :margin-top 16)}
        (i18n/label :t/tribute-to-talk-disabled-note)])]])
@@ -185,10 +183,10 @@
      [react/view {:style {:margin-left 16 :justify-content :flex-start}}
       [react/view {:style {:justify-content :center
                            :align-items :center}}
-       [react/text {:style styles/current-snt-amount}
+       [react/nested-text {:style styles/current-snt-amount}
         snt-amount
-        [react/text {:style (assoc styles/current-snt-amount
-                                   :color colors/gray)} " SNT"]]]
+        [{:style (assoc styles/current-snt-amount :color colors/gray)}
+         " SNT"]]]
       [snt-asset-value fiat-value]]]
     [react/view {:flex 1}]
     [react/text {:on-press #(re-frame/dispatch
@@ -235,13 +233,14 @@
      (i18n/label :t/tribute-to-talk)]]
    (when-not (string/blank? personalized-message)
      [react/view {:style styles/chat-sample-bubble}
-      [react/text {:style {:font-size 15 :color colors/black}}
-       (i18n/label :t/tribute-to-talk-sample-text)]])
+      [react/text (i18n/label :t/tribute-to-talk-sample-text)]])
    [react/view {:style (assoc styles/chat-sample-bubble :width 141)}
     ;;TODO replace hardcoded values
-    [react/nested-text {:style {:font-size 22 :color colors/black}} (str snt-amount)
+    [react/nested-text {:style {:font-size 22}}
+     (str snt-amount)
      [{:style {:font-size 22 :color colors/gray}} " SNT"]]
-    [react/nested-text {:style {:font-size 12 :color colors/black}}
+    [react/nested-text
+     {:style {:font-size 12}}
      (str "~" fiat-amount)
      [{:style {:font-size 12 :color colors/gray}} (str " " fiat-currency)]]
     [react/view {:style styles/pay-to-chat-container}
